@@ -1,0 +1,152 @@
+<?php
+/**
+ * @file
+ * Install function for the graph module.
+ */
+
+
+/**
+ * Implements hook_schema()
+ *
+ * Create three tables: vertex, links(edges), graph
+ *
+ */
+function graph_schema() {
+  $schema['vertex'] = array(
+    'description' => 'All vertexes for graphs are stored in this table',
+    'fields' => array(
+      'vid' => array(
+        'description' => t('The primary identifier for a vertex'),
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'gid' => array(
+        'description' => t('Id of the graph to which the current vertex belongs'),
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'reflexive' => array(
+        'description' => t('Bool identifier for a vertex'),
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'label' => array(
+        'description' => t('Vertex label'),
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'weight' => array(
+        'description' => t('Weight of the vertex'),
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'x' => array(
+        'description' => t('X coordonation of the vertex'),
+        'type' => 'float',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'y' => array(
+        'description' => t('Y coordonation of the vertex'),
+        'type' => 'float',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'px' => array(
+        'description' => t('PX coordonation of the vertex'),
+        'type' => 'float',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'py' => array(
+        'description' => t('PY coordonation of the vertex'),
+        'type' => 'float',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'foreign key' => array(
+      'graph' => array(
+        'table' => 'graph',
+        'columns' => array('gid' => 'gid'),
+      ),
+    ),
+  );
+
+  $schema['links'] = array(
+    'description' => 'All edges and arccs for graphs are stored in this table',
+    'fields' => array(
+      'gid' => array(
+        'description' => t('Id of the graph to which the current link belongs'),
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'default' => 0,
+      ),
+      'source' => array(
+        'description' => t('Id of the source vertex of the current link'),
+        'type' => 'int',
+        'unsigned' => TRUE,
+      ),
+      'target' => array(
+        'description' => t('Id of the target vertex of the current link'),
+        'type' => 'int',
+        'unsigned' => TRUE,
+      ),
+      'to_right' => array(
+        'description' => t('Bool identifier for link direction from left to right'),
+        'type' => 'int',
+        'size' => 'tiny',
+        'unsigned' => TRUE,
+      ),
+      'to_left' => array(
+        'description' => t('Bool identifier for link direction from right to left'),
+        'type' => 'int',
+        'size' => 'tiny',
+        'unsigned' => TRUE,
+      ),
+    ),
+    'foreign key' => array(
+      'graph' => array(
+        'table' => 'graph',
+        'columns' => array('gid' => 'gid'),
+      ),
+    ),
+  );
+
+  $schema['graph'] = array(
+    'description' => 'Graph general properties',
+    'fields' => array(
+      'gid' => array(
+        'description' => t('Id of the graph'),
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'title' => array(
+        'description' => t('Humman readible title of the graph'),
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'image' => array(
+        'description' => t('Image path'),
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+    ),
+    'primary key' => array('gid'),
+  );
+  return $schema;
+}

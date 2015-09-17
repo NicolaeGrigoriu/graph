@@ -1,0 +1,10 @@
+/**
+ * Form items styles
+ */
+#graph-form .form-item-title {
+  float: left;
+}
+#graph-form .form-submit {
+  margin-top: 22px;
+  margin-left: 20px;
+}

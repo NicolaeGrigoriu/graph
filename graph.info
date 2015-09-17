@@ -1,0 +1,7 @@
+name = Graph Theory functionality
+description = Functionality for transitive orientation of the graph construction and save functionality
+core = 7.x
+version = 7.x-1.0
+
+; Add a style sheet for all media
+stylesheets[all][] = css/graph.styles.css

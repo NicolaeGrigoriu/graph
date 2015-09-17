@@ -1,0 +1,258 @@
+<?php
+/**
+ * @file graph.module
+ * Implements functions for the connection of the server with the js library
+ */
+
+/**
+ * Implements hook_menu()
+ * @return array menu items
+ */
+function graph_menu() {
+  $items['graph'] = array(
+    'title' => 'Transitively orientable graph',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('graph_form'),
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+  );
+  $items['graph/%'] = array(
+    'title' => 'Transitively orientable graph',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('graph_form', 1),
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+  );
+   //Basic ajax callback
+  $items['graph-ajax-operations'] = array(
+    'title' => 'AJAX processing of graph operations',
+    'page callback' => 'graph_ajax_operations',
+    'access callback' => TRUE,
+    'type' => MENU_CALLBACK,
+  );
+  $items['graphs'] = array(
+    'title' => 'Graphs',
+    'page callback' => 'graph_gallery',
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_library()
+ * @return array libraries
+ */
+function graph_library() {
+  $libraries['d3'] = array(
+    'title' => 'D3',
+    'website' => 'http://d3js.org/',
+    'version' => '3.5.3',
+    'js' => array(
+      drupal_get_path('module', 'graph') . '/js/d3.min.js' => array(),
+    ),
+  );
+
+  return $libraries;
+}
+
+/**
+ * Implements hook_theme
+ *
+ * Theme of the form using the graph-canvas template
+ *
+ * @return array rendered array of the theme function
+ */
+function graph_theme() {
+  return array(
+    'graph_form' => array(
+      'arguments' => array('form' => NULL),
+      'template' => 'graph-canvas',
+      'render element' => 'form',
+    ),
+  );
+}
+
+/**
+ * Form construction
+ *
+ * @param  array $form        form variables
+ * @param  array &$form_state state of the form variables
+ * @return array              custom form elements
+ */
+function graph_form($form, &$form_state, $gid = NULL) {
+  $vertexes = array();
+  $links = array();
+  if ($gid != NULL) {
+    //Select graph by its ID
+    $result_graph = db_select('graph', 'g')
+      ->fields('g', array('title'))
+      ->condition('gid', $gid, '=')
+      ->execute()
+      ->fetchAssoc();
+
+      //Select all vertexes by graph ID
+      $query = db_select('vertex', 'v');
+      $query->addField('v', 'vid', 'id');
+      $query->fields('v', array('reflexive', 'label', 'weight', 'x', 'y', 'px', 'py'))
+        ->condition('gid', $gid, '=');
+      $result = $query->execute();
+      while ($row = $result->fetchAssoc()) {
+        $vertexes[] = array(
+          'id' => (int)$row['id'],
+          'reflexive' => ($row['reflexive'] == 1) ? TRUE : FALSE,
+          'index' => (int)$row['label'],
+          'weight' => (int)$row['weight'],
+          'x' => (float)$row['x'],
+          'y' => (float)$row['y'],
+          'px' => (float)$row['px'],
+          'py' => (float)$row['py'],
+        );
+      }
+
+      //Select all links/edges by the graph ID
+      $query = db_select('links', 'l');
+      $query->fields('l', array('source', 'target', 'to_right', 'to_left'));
+      $query->condition('gid', $gid, '=');
+      $result = $query->execute();
+      while ($row = $result->fetchAssoc()) {
+        $row['left'] = ($row['to_left'] == 1) ? TRUE : FALSE;
+        unset($row['to_left']);
+        $row['right'] = ($row['to_right'] == 1) ? TRUE : FALSE;
+        unset($row['to_right']);
+        $row['source'] = $vertexes[$row['source']];
+        $row['target'] = $vertexes[$row['target']];
+        $links[] = $row;
+      }
+  }
+
+  $form['title'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Graph name'),
+    '#required' => TRUE,
+    '#size' => 12,
+    '#value' => ($gid != NULL) ? $result_graph['title'] : t('Graph'),
+  );
+  $form['save'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save'),
+  );
+
+  //attach d3 libraries and custom functionality to the page
+  $form['#attached']['library'][] = array('graph', 'd3');
+
+  $graph = array(
+    'gid' => $gid,
+    'nodes' => $vertexes,
+    'links' => $links,
+  );
+  //Attach graph operations and pass variable from php to js
+  $form['#attached']['js'] = array(
+    drupal_get_path('module', 'graph') . '/js/d3.graph_op.js' => array(),
+    array(
+      // Pass PHP variables to Drupal.settings.
+      'data' => array('graph' => $graph),
+      'type' => 'setting',
+     ),
+  );
+
+  $form['#attached']['css'] = array(
+    drupal_get_path('module', 'graph') . '/css/graph.css',
+  );
+  return $form;
+}
+
+/**
+ * Graph AJAX operations.
+ */
+function graph_ajax_operations(&$form, &$form_state) {
+  if ($_POST) {
+    $nodes = $_POST['nodes'];
+    $links = $_POST['links'];
+    $graph = $_POST['graph'];
+    $gid = $_POST['gid'];
+
+    if ($gid == NULL) {
+      //Save graph title and image
+      db_insert('graph')->fields(array(
+        'title' => $graph,
+        'image' => ($values['image']) ? $image . $values['image'] : $image . 'graph.png'
+      ))->execute();
+
+      //Extract graph id for vertexes saving
+      $result = db_select('graph', 'g')
+        ->fields('g', array('gid'))
+        ->orderBy('gid', 'DESC')
+        ->range(0, 1)
+        ->execute()
+        ->fetchAssoc();
+      $gid = $result['gid'];
+    }
+    else {
+      //There could be added new links and nodes in a graph, so it is neccessary to
+      //delete all of them in order to save them again after graph altering
+      $deleted_vertexes = db_delete('vertex')
+        ->condition('gid', $gid)
+        ->execute();
+      $delteed_links = db_delete('links')
+        ->condition('gid', $gid)
+        ->execute();
+    }
+
+    //Insert vertexes into the 'vertex' table
+    $vertexes = array();
+    foreach ($nodes as $node) {
+      $vertexes[] = array(
+        'gid' => $gid,
+        'vid' => $node['id'],
+        'reflexive' => ($node['reflexive'] === 'true') ? 1 : 0,
+        'label' => $node['index'],
+        'weight' => $node['weight'],
+        'x' => $node['x'],
+        'y' => $node['y'],
+        'px' => $node['px'],
+        'py' => $node['py'],
+      );
+    }
+    $query = db_insert('vertex')->fields(array('gid', 'vid', 'reflexive', 'label', 'weight', 'x', 'y', 'px', 'py'));
+    foreach ($vertexes as $record) {
+      $query->values($record);
+    }
+    $query->execute();
+
+    //Insert links into the 'links' table
+    $edges = array();
+    foreach ($links as $link) {
+      $edges[] = array(
+        'gid' => $gid,
+        'source' => $link['source']['id'],
+        'target' => $link['target']['id'],
+        'to_left' =>  ($link['left'] === 'true') ? 1 : 0,
+        'to_right' => ($link['right'] === 'true') ? 1 : 0,
+      );
+    }
+    $query = db_insert('links')->fields(array('gid', 'source', 'target', 'to_left', 'to_right'));
+    foreach ($edges as $edge) {
+      $query->values($edge);
+    }
+    $query->execute();
+
+    print json_encode(array('nodes' => $nodes, 'links' => $links, 'graph' => $graph));
+  }
+  exit();
+}
+
+function graph_gallery() {
+  //Select all graphs from database
+  $result = db_select('graph', 'g')
+    ->fields('g')
+    ->execute();
+  $output = '';
+  while ($row = $result->fetchAssoc()) {
+    //TODO: To add image load functionality
+    $output .= '<div class="graph-data"><div class="graph-image"></div>'
+            . '<a href="graph/' . $row['gid'] . '">' . $row['title'] . '</a></div>';
+  }
+
+  return $output;
+}
