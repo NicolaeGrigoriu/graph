@@ -176,7 +176,7 @@ function graph_ajax_operations(&$form, &$form_state) {
       //Save graph title and image
       db_insert('graph')->fields(array(
         'title' => $graph,
-        'image' => ($values['image']) ? $image . $values['image'] : $image . 'graph.png'
+//        'image' => ($values['image']) ? $image . $values['image'] : $image . 'graph.png'
       ))->execute();
 
       //Extract graph id for vertexes saving
@@ -194,7 +194,7 @@ function graph_ajax_operations(&$form, &$form_state) {
       $deleted_vertexes = db_delete('vertex')
         ->condition('gid', $gid)
         ->execute();
-      $delteed_links = db_delete('links')
+      $deleted_links = db_delete('links')
         ->condition('gid', $gid)
         ->execute();
     }
