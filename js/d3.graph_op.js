@@ -1,5 +1,5 @@
 (function ($) {
-  Drupal.behaviors.graph = {
+  Drupal.behaviors.d3_graph = {
     attach: function (context, settings) {
       // set up SVG for D3
       var width  = 960,
@@ -380,7 +380,7 @@
       restart();
 
       //Actions on save button submit event
-     jQuery('#graph-form').submit(function() {
+     jQuery('#edit-save').on('click', function() {
         var graph_title = jQuery('#edit-title').val();
         //Pass graph to the $_POST variable for MySql insert
         jQuery.ajax({
@@ -395,6 +395,13 @@
             console.log(errorThrown);
           }
         });
+        return false;
+      });
+
+      // Perform tro calculations on form calculate button click.
+      $('#edit-calculate').on('click', function() {
+        var graph = convertToAdjList(links);
+        var BSS = getBSS(graph);
         return false;
       });
     }

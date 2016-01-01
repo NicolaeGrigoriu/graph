@@ -133,11 +133,15 @@ function graph_form($form, &$form_state, $gid = NULL) {
     '#size' => 12,
     '#value' => ($gid != NULL) ? $result_graph['title'] : t('Graph'),
   );
+
   $form['save'] = array(
     '#type' => 'submit',
     '#value' => t('Save'),
   );
-
+  $form['calculate'] = array(
+    '#type' => 'submit',
+    '#value' => t('Calculate'),
+  );
   //attach d3 libraries and custom functionality to the page
   $form['#attached']['library'][] = array('graph', 'd3');
 
@@ -147,8 +151,10 @@ function graph_form($form, &$form_state, $gid = NULL) {
     'links' => $links,
   );
   //Attach graph operations and pass variable from php to js
+  $path = drupal_get_path('module', 'graph');
   $form['#attached']['js'] = array(
-    drupal_get_path('module', 'graph') . '/js/d3.graph_op.js' => array(),
+    $path . '/js/graph.js' => array(),
+    $path . '/js/d3.graph_op.js' => array(),
     array(
       // Pass PHP variables to Drupal.settings.
       'data' => array('graph' => $graph),
@@ -157,7 +163,7 @@ function graph_form($form, &$form_state, $gid = NULL) {
   );
 
   $form['#attached']['css'] = array(
-    drupal_get_path('module', 'graph') . '/css/graph.css',
+    $path . '/css/graph.css',
   );
   return $form;
 }
