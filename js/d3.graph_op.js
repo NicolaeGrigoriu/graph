@@ -1,6 +1,6 @@
 (function ($) {
   Drupal.behaviors.d3_graph = {
-    attach: function (context, settings) {
+    attach: function () {
       // set up SVG for D3
       var width  = 960,
           height = 500,
@@ -11,22 +11,30 @@
         .attr('height', height);
 
         var gid = Drupal.settings.graph.gid;
-        var vertexes = Drupal.settings.graph.nodes;
-        var edges = Drupal.settings.graph.links;
+        //var vertexes = Drupal.settings.graph.nodes;
+        //var edges = Drupal.settings.graph.links;
 
       // set up initial nodes and links
       //  - nodes are known by 'id', not by index in array.
       //  - reflexive edges are indicated on the node (as a bold black circle).
       //  - links are always source < target; edge directions are set by 'left' and 'right'.
       var nodes = [
-          {id: 0, reflexive: false},
-          {id: 1, reflexive: true },
-          {id: 2, reflexive: false}
+          {id: 1, reflexive: false},
+          {id: 2, reflexive: false},
+          {id: 3, reflexive: false},
+          {id: 4, reflexive: false},
+          {id: 5, reflexive: false}
         ],
-        lastNodeId = 2,
+        lastNodeId = 5,
         links = [
-          {source: nodes[0], target: nodes[1], left: false, right: true },
-          {source: nodes[1], target: nodes[2], left: false, right: true }
+          {source: nodes[0], target: nodes[1], left: false, right: false },
+          {source: nodes[0], target: nodes[2], left: false, right: false },
+          {source: nodes[0], target: nodes[3], left: false, right: false },
+          {source: nodes[0], target: nodes[4], left: false, right: false },
+          {source: nodes[4], target: nodes[1], left: false, right: false },
+          {source: nodes[4], target: nodes[2], left: false, right: false },
+          {source: nodes[4], target: nodes[3], left: false, right: false },
+          {source: nodes[1], target: nodes[2], left: false, right: false }
         ];
 
       // init D3 force layout
@@ -38,7 +46,7 @@
           .friction(0)
           .gravity(0)
           .charge(-100)
-          .on('tick', tick)
+          .on('tick', tick);
 
       // define arrow markers for graph links
       svg.append('svg:defs').append('svg:marker')
@@ -400,8 +408,8 @@
 
       // Perform tro calculations on form calculate button click.
       $('#edit-calculate').on('click', function() {
-        var graph = convertToAdjList(links);
-        var BSS = getBSS(graph);
+        var list = convertToAdjList(links);
+        var BSS = getBSS(list);
         return false;
       });
     }
