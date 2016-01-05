@@ -409,7 +409,7 @@
       // Perform tro calculations on form calculate button click.
       $('#edit-calculate').on('click', function() {
         var list = convertToAdjList(links);
-        var BSS = getBSS(list);
+        var BSS = SBS(list);
         return false;
       });
     }
